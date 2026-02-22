@@ -1,7 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
-import { InboxClient } from './inbox-client'
+import { ChatClient } from './chat-client'
 
-export default async function InboxPage() {
+export default async function ChatPage() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
 
@@ -34,7 +34,7 @@ export default async function InboxPage() {
     .order('last_message_at', { ascending: false })
 
   return (
-    <InboxClient
+    <ChatClient
       twilioAccount={twilioAccount}
       phoneNumbers={phoneNumbers || []}
       conversations={conversations || []}

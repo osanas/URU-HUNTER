@@ -61,7 +61,7 @@ export async function createTwilioSubaccount() {
       return { error: 'Failed to save Twilio account' }
     }
 
-    revalidatePath('/dashboard/inbox')
+    revalidatePath('/dashboard/chat')
     return { success: true, account: twilioAccount }
   } catch (error) {
     console.error('Twilio error:', error)
@@ -204,7 +204,7 @@ export async function purchasePhoneNumber(phoneNumber: string, baseUrl?: string)
       return { error: 'Failed to save phone number' }
     }
 
-    revalidatePath('/dashboard/inbox')
+    revalidatePath('/dashboard/chat')
     return { success: true, number: purchasedNumber, webhookConfigured: !!webhookUrl }
   } catch (error) {
     return { error: 'Failed to purchase phone number' }
@@ -431,7 +431,7 @@ export async function sendMessage(formData: FormData) {
       .update({ last_message_at: new Date().toISOString() })
       .eq('id', conversationId)
 
-    revalidatePath('/dashboard/inbox')
+    revalidatePath('/dashboard/chat')
     return { success: true, message }
   } catch (error) {
     return { error: 'Failed to send message' }
@@ -486,6 +486,6 @@ export async function createConversation(formData: FormData) {
     return { error: 'Failed to create conversation' }
   }
 
-  revalidatePath('/dashboard/inbox')
+  revalidatePath('/dashboard/chat')
   return { conversation }
 }

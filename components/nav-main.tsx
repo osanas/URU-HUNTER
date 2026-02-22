@@ -1,58 +1,123 @@
 "use client"
 
-import { IconCirclePlusFilled, IconMail, type Icon } from "@tabler/icons-react"
+import Link from "next/link"
+import { ChevronRight, type LucideIcon } from "lucide-react"
+import { Badge } from "@/components/ui/badge"
 
-import { Button } from '@/components/ui/button'
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible"
 import {
   SidebarGroup,
-  SidebarGroupContent,
+  SidebarGroupLabel,
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-} from '@/components/ui/sidebar'
+  SidebarMenuSub,
+  SidebarMenuSubButton,
+  SidebarMenuSubItem,
+} from "@/components/ui/sidebar"
+
+type NavItemIcon = LucideIcon | React.ComponentType<{ className?: string }>
 
 export function NavMain({
   items,
 }: {
   items: {
     title: string
-    url: string
-    icon?: Icon
+    url?: string
+    icon?: NavItemIcon
+    isActive?: boolean
+    header?: boolean
+    badge?: number
+    items?: {
+      title: string
+      url: string
+      isActive?: boolean
+    }[]
   }[]
 }) {
   return (
     <SidebarGroup>
-      <SidebarGroupContent className="flex flex-col gap-2">
-        <SidebarMenu>
-          <SidebarMenuItem className="flex items-center gap-2">
-            <SidebarMenuButton
-              tooltip="Quick Create"
-              className="bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground active:bg-primary/90 active:text-primary-foreground min-w-8 duration-200 ease-linear"
-            >
-              <IconCirclePlusFilled />
-              <span>Quick Create</span>
-            </SidebarMenuButton>
-            <Button
-              size="icon"
-              className="size-8 group-data-[collapsible=icon]:opacity-0"
-              variant="outline"
-            >
-              <IconMail />
-              <span className="sr-only">Inbox</span>
-            </Button>
-          </SidebarMenuItem>
-        </SidebarMenu>
-        <SidebarMenu>
-          {items.map((item) => (
+      <SidebarMenu>
+        {items.map((item) => {
+          if (item.header) {
+            return (
+              <SidebarGroupLabel key={item.title} className="mt-4 px-2">
+                {item.title}
+              </SidebarGroupLabel>
+            )
+          }
+
+          if (item.items && item.items.length > 0) {
+            return (
+              <Collapsible
+                key={item.title}
+                asChild
+                defaultOpen={item.isActive}
+                className="group/collapsible"
+              >
+                <SidebarMenuItem>
+                  <CollapsibleTrigger asChild>
+                    <SidebarMenuButton
+                      tooltip={item.title}
+                      className={item.isActive ? "bg-accent text-accent-foreground" : ""}
+                    >
+                      {item.icon && <item.icon className="size-4" />}
+                      <span>{item.title}</span>
+                      <ChevronRight className="ml-auto size-4 transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
+                    </SidebarMenuButton>
+                  </CollapsibleTrigger>
+                  <CollapsibleContent>
+                    <SidebarMenuSub>
+                      {item.items.map((subItem) => (
+                        <SidebarMenuSubItem key={subItem.title}>
+                          <SidebarMenuSubButton
+                            asChild
+                            className={subItem.isActive ? "bg-accent text-accent-foreground" : ""}
+                          >
+                            <Link href={subItem.url}>
+                              <span>{subItem.title}</span>
+                            </Link>
+                          </SidebarMenuSubButton>
+                        </SidebarMenuSubItem>
+                      ))}
+                    </SidebarMenuSub>
+                  </CollapsibleContent>
+                </SidebarMenuItem>
+              </Collapsible>
+            )
+          }
+
+          return (
             <SidebarMenuItem key={item.title}>
-              <SidebarMenuButton tooltip={item.title}>
-                {item.icon && <item.icon />}
-                <span>{item.title}</span>
+              <SidebarMenuButton
+                asChild
+                tooltip={item.title}
+                className={item.isActive ? "bg-accent text-accent-foreground" : ""}
+              >
+                <Link
+                  href={item.url ?? "#"}
+                  className="flex items-center gap-2 w-full"
+                >
+                  {item.icon && <item.icon className="size-4" />}
+                  <span className="flex-1">{item.title}</span>
+                  {item.badge !== undefined && item.badge > 0 && (
+                    <Badge
+                      variant="destructive"
+                      className="h-5 min-w-5 flex items-center justify-center px-1.5 text-xs"
+                    >
+                      {item.badge}
+                    </Badge>
+                  )}
+                </Link>
               </SidebarMenuButton>
             </SidebarMenuItem>
-          ))}
-        </SidebarMenu>
-      </SidebarGroupContent>
+          )
+        })}
+      </SidebarMenu>
     </SidebarGroup>
   )
 }

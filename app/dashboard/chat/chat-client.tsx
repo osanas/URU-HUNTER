@@ -5,11 +5,14 @@ import {
   IconMessagePlus,
   IconPhone,
   IconBrandWhatsapp,
+  IconBrandFacebook,
+  IconBrandInstagram,
   IconSend,
   IconPlus,
   IconLoader2,
   IconUser,
   IconCheck,
+  IconArrowLeft,
 } from '@tabler/icons-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -79,13 +82,22 @@ interface Message {
   status: string
 }
 
-interface InboxClientProps {
+interface ChatClientProps {
   twilioAccount: TwilioAccount | null
   phoneNumbers: PhoneNumber[]
   conversations: Conversation[]
 }
 
-export function InboxClient({ twilioAccount, phoneNumbers, conversations }: InboxClientProps) {
+type ChatChannel = 'phone' | 'facebook' | 'instagram'
+
+const CHANNELS: { id: ChatChannel; label: string; description: string; icon: React.ElementType; available: boolean }[] = [
+  { id: 'phone', label: 'Téléphone', description: 'SMS & WhatsApp', icon: IconPhone, available: true },
+  { id: 'facebook', label: 'Facebook', description: 'Messenger', icon: IconBrandFacebook, available: true },
+  { id: 'instagram', label: 'Instagram', description: 'Messages directs', icon: IconBrandInstagram, available: false },
+]
+
+export function ChatClient({ twilioAccount, phoneNumbers, conversations }: ChatClientProps) {
+  const [selectedChannel, setSelectedChannel] = useState<ChatChannel | null>(null)
   const [isPending, startTransition] = useTransition()
   const [selectedConversation, setSelectedConversation] = useState<Conversation | null>(null)
   const [messages, setMessages] = useState<Message[]>([])
@@ -140,30 +152,118 @@ export function InboxClient({ twilioAccount, phoneNumbers, conversations }: Inbo
     })
   }
 
-  // No Twilio account - show onboarding
+  // Channel selection screen
+  if (selectedChannel === null) {
+    return (
+      <div className="flex flex-1 flex-col items-center justify-center p-6">
+        <h2 className="mb-2 text-xl font-semibold">Choisissez un canal</h2>
+        <p className="mb-8 text-muted-foreground">Connectez-vous pour discuter avec vos contacts</p>
+        <div className="grid w-full max-w-2xl gap-4 sm:grid-cols-3">
+          {CHANNELS.map((channel) => {
+            const Icon = channel.icon
+            const handleClick = () => {
+              if (!channel.available) return
+              if (channel.id === 'facebook') {
+                window.location.href = '/api/auth/meta'
+                return
+              }
+              setSelectedChannel(channel.id)
+            }
+            return (
+              <Card
+                key={channel.id}
+                className={cn(
+                  "cursor-pointer transition-colors hover:border-primary/50",
+                  !channel.available && "opacity-75 cursor-not-allowed"
+                )}
+                onClick={handleClick}
+              >
+                <CardHeader className="text-center">
+                  <div className="mx-auto mb-2 flex size-14 items-center justify-center rounded-full bg-primary/10">
+                    <Icon className="size-7 text-primary" />
+                  </div>
+                  <CardTitle className="text-lg">{channel.label}</CardTitle>
+                  <CardDescription>{channel.description}</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <Button
+                    variant={channel.available ? "default" : "secondary"}
+                    className="w-full"
+                    disabled={!channel.available}
+                  >
+                    {channel.available
+                      ? channel.id === 'facebook'
+                        ? "Connecter"
+                        : "Utiliser"
+                      : "Bientôt disponible"}
+                  </Button>
+                </CardContent>
+              </Card>
+            )
+          })}
+        </div>
+      </div>
+    )
+  }
+
+  // Facebook / Instagram - Coming Soon
+  if (selectedChannel === 'facebook' || selectedChannel === 'instagram') {
+    const channel = CHANNELS.find((c) => c.id === selectedChannel)!
+    const Icon = channel.icon
+    return (
+      <div className="flex flex-1 flex-col items-center justify-center p-6">
+        <Button
+          variant="ghost"
+          className="mb-6 -ml-2"
+          onClick={() => setSelectedChannel(null)}
+        >
+          <IconArrowLeft className="mr-2 size-4" />
+          Retour
+        </Button>
+        <div className="flex max-w-md flex-col items-center text-center">
+          <div className="mb-6 flex size-20 items-center justify-center rounded-full bg-primary/10">
+            <Icon className="size-10 text-primary" />
+          </div>
+          <h1 className="mb-2 text-2xl font-semibold tracking-tight">{channel.label} — Bientôt disponible</h1>
+          <p className="mb-8 text-muted-foreground">
+            L'intégration {channel.label} est en cours de développement. Revenez bientôt !
+          </p>
+        </div>
+      </div>
+    )
+  }
+
+  // Phone channel - No Twilio account - show onboarding
   if (!twilioAccount) {
     return (
-      <div className="flex flex-1 items-center justify-center p-6">
+      <div className="flex flex-1 flex-col items-center justify-center p-6">
+        <Button
+          variant="ghost"
+          className="mb-6 -ml-2"
+          onClick={() => setSelectedChannel(null)}
+        >
+          <IconArrowLeft className="mr-2 size-4" />
+          Retour
+        </Button>
         <Card className="w-full max-w-md">
           <CardHeader className="text-center">
-            <CardTitle className="text-2xl">Connect Twilio</CardTitle>
+            <CardTitle className="text-2xl">Connecter Twilio</CardTitle>
             <CardDescription>
-              Connect your Twilio account to start sending SMS and WhatsApp messages
+              Connectez votre compte Twilio pour envoyer des SMS et messages WhatsApp
             </CardDescription>
           </CardHeader>
           <CardContent className="flex flex-col gap-4">
             <p className="text-sm text-muted-foreground text-center">
-              We'll create a dedicated Twilio subaccount for your messaging needs. 
-              You can then purchase phone numbers and start conversations.
+              Nous créerons un sous-compte Twilio dédié. Vous pourrez ensuite acheter des numéros et démarrer des conversations.
             </p>
             <Button onClick={handleConnectTwilio} disabled={isPending} className="w-full">
               {isPending ? (
                 <>
                   <IconLoader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Connecting...
+                  Connexion...
                 </>
               ) : (
-                'Connect Twilio Account'
+                'Connecter Twilio'
               )}
             </Button>
           </CardContent>
@@ -172,15 +272,23 @@ export function InboxClient({ twilioAccount, phoneNumbers, conversations }: Inbo
     )
   }
 
-  // No phone numbers - show phone purchase flow
+  // Phone channel - No phone numbers - show phone purchase flow
   if (phoneNumbers.length === 0) {
     return (
-      <div className="flex flex-1 items-center justify-center p-6">
+      <div className="flex flex-1 flex-col items-center justify-center p-6">
+        <Button
+          variant="ghost"
+          className="mb-6 -ml-2"
+          onClick={() => setSelectedChannel(null)}
+        >
+          <IconArrowLeft className="mr-2 size-4" />
+          Retour
+        </Button>
         <Card className="w-full max-w-md">
           <CardHeader className="text-center">
-            <CardTitle className="text-2xl">Get a Phone Number</CardTitle>
+            <CardTitle className="text-2xl">Obtenir un numéro</CardTitle>
             <CardDescription>
-              Purchase a phone number to start sending messages
+              Achetez un numéro pour commencer à envoyer des messages
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -195,9 +303,19 @@ export function InboxClient({ twilioAccount, phoneNumbers, conversations }: Inbo
     <div className="flex h-[calc(100vh-4rem)] gap-0">
       {/* Conversations List */}
       <div className="w-80 flex-shrink-0 border-r flex flex-col">
-        <div className="p-4 border-b flex items-center justify-between">
-          <h2 className="font-semibold">Conversations</h2>
-          <div className="flex gap-2">
+        <div className="p-4 border-b flex flex-col gap-2">
+          <Button
+            variant="ghost"
+            size="sm"
+            className="-ml-1 h-8 w-fit px-2 text-muted-foreground hover:text-foreground"
+            onClick={() => setSelectedChannel(null)}
+          >
+            <IconArrowLeft className="mr-1 size-4" />
+            <span className="text-xs">Changer de canal</span>
+          </Button>
+          <div className="flex items-center justify-between">
+            <h2 className="font-semibold">Conversations</h2>
+            <div className="flex gap-2">
             <Dialog open={buyNumberOpen} onOpenChange={setBuyNumberOpen}>
               <DialogTrigger asChild>
                 <Button variant="outline" size="icon">
@@ -206,9 +324,9 @@ export function InboxClient({ twilioAccount, phoneNumbers, conversations }: Inbo
               </DialogTrigger>
               <DialogContent>
                 <DialogHeader>
-                  <DialogTitle>Buy Phone Number</DialogTitle>
+                  <DialogTitle>Acheter un numéro</DialogTitle>
                   <DialogDescription>
-                    Purchase a new phone number for messaging
+                    Achetez un nouveau numéro pour envoyer des messages
                   </DialogDescription>
                 </DialogHeader>
                 <BuyPhoneNumberForm onSuccess={() => {
@@ -225,9 +343,9 @@ export function InboxClient({ twilioAccount, phoneNumbers, conversations }: Inbo
               </DialogTrigger>
               <DialogContent>
                 <DialogHeader>
-                  <DialogTitle>New Conversation</DialogTitle>
+                  <DialogTitle>Nouvelle conversation</DialogTitle>
                   <DialogDescription>
-                    Start a new SMS or WhatsApp conversation
+                    Démarrer une conversation SMS ou WhatsApp
                   </DialogDescription>
                 </DialogHeader>
                 <NewConversationForm 
@@ -240,6 +358,7 @@ export function InboxClient({ twilioAccount, phoneNumbers, conversations }: Inbo
                 />
               </DialogContent>
             </Dialog>
+            </div>
           </div>
         </div>
         
