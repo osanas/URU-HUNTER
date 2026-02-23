@@ -16,6 +16,15 @@ META_WEBHOOK_VERIFY_TOKEN=votre_token_secret
 NEXT_PUBLIC_APP_URL=https://votre-domaine.com
 ```
 
+## URLs pour la console Meta
+
+| Champ | URL |
+|-------|-----|
+| Privacy Policy URL | `https://votre-domaine.com/privacy-policy` |
+| Terms of Service URL | `https://votre-domaine.com/terms-of-service` |
+| User Data Deletion Instructions URL | `https://votre-domaine.com/user-data-deletion` |
+| Data Deletion Request Callback URL | `https://votre-domaine.com/api/user-data-deletion` |
+
 ## Endpoints créés
 
 | Endpoint | Méthode | Usage |

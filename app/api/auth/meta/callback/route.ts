@@ -57,7 +57,14 @@ export async function GET(request: NextRequest) {
 
     const userAccessToken = tokenData.access_token
 
-    // 2. Récupérer les Pages Facebook de l'utilisateur
+    // 2. Récupérer l'ID Facebook de l'utilisateur (pour le callback de suppression)
+    const meResponse = await fetch(
+      `https://graph.facebook.com/${META_GRAPH_VERSION}/me?fields=id&access_token=${userAccessToken}`
+    )
+    const meData = await meResponse.json()
+    const facebookUserId = meData.id || null
+
+    // 3. Récupérer les Pages Facebook de l'utilisateur
     const pagesResponse = await fetch(
       `https://graph.facebook.com/${META_GRAPH_VERSION}/me/accounts?fields=id,name,access_token,tasks&access_token=${userAccessToken}`
     )
@@ -68,7 +75,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.redirect(`${chatUrl}?meta_error=no_pages`)
     }
 
-    // 3. Pour chaque Page, vérifier si Instagram est lié et sauvegarder
+    // 4. Pour chaque Page, vérifier si Instagram est lié et sauvegarder
     for (const page of pagesData.data) {
       if (!page.tasks?.includes('MESSAGING')) continue
 
@@ -99,6 +106,7 @@ export async function GET(request: NextRequest) {
           page_id: page.id,
           page_name: page.name,
           access_token: page.access_token,
+          facebook_user_id: facebookUserId,
           instagram_account_id: instagramAccountId,
           instagram_username: instagramUsername,
           updated_at: new Date().toISOString(),
